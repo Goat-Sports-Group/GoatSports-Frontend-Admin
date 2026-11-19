@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, inject, signal, computed, HostListener, afterNextRender } from '@angular/core';
 import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -23,6 +23,8 @@ import { LucideIconComponent } from '@shared/components/ui/lucide-icon/lucide-ic
 import { environment } from "@environments/environment"
 import { formatRelativeTime } from '@shared/utils/date-trend.utils';
 import { getFallbackAvatar } from '@shared/utils/user-display.utils';
+import { GoatMotionService } from '@shared/motion/goat-motion.service';
+import { ParticleBackdropComponent } from '@shared/motion/particle-backdrop.component';
 import {
   AdminNavigationGroup,
   AdminNavigationItem,
@@ -45,6 +47,7 @@ import {
     MatDividerModule,
     MatSidenavModule,
     LucideIconComponent,
+    ParticleBackdropComponent,
   ],
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.scss'
@@ -52,6 +55,21 @@ import {
   // Nhật ký và drawer/dialog của chúng) không vẽ lại khi HTTP trả về, chỉ cập nhật sau khi người dùng bấm vào trang.
 })
 export class AdminComponent implements OnInit {
+  private readonly motion = inject(GoatMotionService);
+  private readonly host = inject(ElementRef<HTMLElement>);
+
+  constructor() {
+    // .admin-content có chiều cao cố định và tự cuộn: cuộn mượt + hiện dần gắn vào nó.
+    afterNextRender(() => {
+      const root = this.host.nativeElement as HTMLElement;
+      this.motion.start({
+        wrapper: root.querySelector('.admin-content') as HTMLElement | null,
+        root: root.querySelector('main')
+      });
+    });
+    inject(DestroyRef).onDestroy(() => this.motion.stop());
+  }
+
   readonly getRelativeTime = formatRelativeTime;
   public authService = inject(AuthService);
   public notificationService = inject(NotificationService);

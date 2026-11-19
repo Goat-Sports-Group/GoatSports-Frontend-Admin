@@ -25,6 +25,16 @@
   background: var(--canvas);
 }
 
+// Mặt sóng hạt 3D mờ ở đáy lớp nền chung: hiện sau mọi trang của chủ sân và quản trị viên.
+.admin-ambient-fx {
+  position: absolute;
+  inset: auto 0 0;
+  display: block;
+  height: 55vh;
+  opacity: .55;
+  mask-image: linear-gradient(to bottom, transparent, #000 55%);
+}
+
 .skip-link {
   position: fixed;
   top: 8px;

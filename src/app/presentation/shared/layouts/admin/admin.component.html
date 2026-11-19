@@ -1,6 +1,8 @@
 <div class="admin-shell" [class.admin-shell--owner]="!isPlatformAdmin()">
   <a class="skip-link" href="#main-content">Đi thẳng đến nội dung chính</a>
-  <div class="admin-shell__ambient" aria-hidden="true"></div>
+  <div class="admin-shell__ambient" aria-hidden="true">
+    <goat-particle-backdrop variant="wave" class="admin-ambient-fx" />
+  </div>
 
   <header class="admin-topbar">
     <div class="admin-topbar__page-context">
