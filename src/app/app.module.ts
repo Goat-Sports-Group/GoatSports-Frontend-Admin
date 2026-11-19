@@ -10,7 +10,6 @@ import { ForbiddenComponent } from '@shared/components/forbidden/forbidden.compo
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NotifyComponent } from '@shared/components/notify/notify.component';
-import { GoatMascotComponent } from '@shared/motion/goat-mascot.component';
 import { SoccerCursorComponent } from '@shared/motion/soccer-cursor.component';
 
 import { AUTH_REPOSITORY_TOKEN } from '@application/ports/persistence/auth.repository';
@@ -98,7 +97,6 @@ import { APP_ICONS } from './app-icons';
     MatProgressSpinnerModule,
     LucideIconComponent,
     NotifyComponent,
-    GoatMascotComponent,
     SoccerCursorComponent
   ],
   providers: [
