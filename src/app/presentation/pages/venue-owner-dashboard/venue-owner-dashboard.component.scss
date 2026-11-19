@@ -1982,3 +1982,10 @@
 
 :host .reviews-preview__list p.is-empty { color: var(--body); font-style: normal; }
 :host .reviews-preview__list .review-avatar lucide-icon { width: 16px; height: 16px; color: var(--rating); }
+
+// Ghi rõ cơ sở đang thống kê: doanh thu ở đây chỉ của cơ sở đang chọn, khác "Tất cả cơ sở" ở Báo cáo doanh thu.
+.revenue-venue {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--body);
+}

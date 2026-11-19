@@ -163,9 +163,9 @@
               @for (slot of day.slots; track slot.timeSlotId) {
               <article class="calendar-slot" [attr.data-status]="slotVisualStatus(slot)" [style.top.px]="slotTop(slot)"
                 [style.height.px]="slotHeight(slot)" [title]="slotTitle(slot)"
-                [class.calendar-slot--link]="!!slot.tournamentId" [attr.role]="slot.tournamentId ? 'link' : null"
-                [attr.tabindex]="slot.tournamentId ? 0 : null"
-                (click)="openHeldTournament(slot)" (keydown.enter)="openHeldTournament(slot)">
+                [class.calendar-slot--link]="hasSlotDetail(slot)" [attr.role]="hasSlotDetail(slot) ? 'button' : null"
+                [attr.tabindex]="hasSlotDetail(slot) ? 0 : null" [attr.aria-haspopup]="hasSlotDetail(slot) ? 'dialog' : null"
+                (click)="openSlot(slot)" (keydown.enter)="openSlot(slot)">
                 <strong>{{ timeValue(slot.startTime) }} – {{ timeValue(slot.endTime) }}</strong>
                 <span>{{ slotStatusLabel(slot) }}</span>
                 <small>{{ slotDetail(slot) }}</small>
@@ -353,6 +353,57 @@
     }
     }
   </section>
+
+@if (openedSlotView(); as view) {
+<div class="slot-detail-backdrop" (click)="closeSlot()">
+  <section class="slot-detail" role="dialog" aria-modal="true" aria-labelledby="slot-detail-title"
+    (click)="$event.stopPropagation()">
+    <header class="slot-detail__header">
+      <span class="slot-detail__badge" [attr.data-status]="view.visual">{{ view.statusLabel }}</span>
+      <h2 id="slot-detail-title">{{ timeValue(view.slot.startTime) }} – {{ timeValue(view.slot.endTime) }}</h2>
+      <p>{{ formatDate(view.slot.date) }}</p>
+      <button type="button" class="slot-detail__close" (click)="closeSlot()" aria-label="Đóng">
+        <lucide-icon name="x" />
+      </button>
+    </header>
+
+    @if (view.kind === 'BOOKING') {
+    <dl class="slot-detail__rows">
+      <div><dt><lucide-icon name="receipt" /> Mã đơn</dt><dd>{{ view.booking.bookingCode }}</dd></div>
+      <div><dt><lucide-icon name="user" /> Khách hàng</dt><dd>{{ view.customerName }}</dd></div>
+      <div><dt><lucide-icon name="phone" /> Số điện thoại</dt><dd>{{ view.customerPhone }}</dd></div>
+      <div><dt><lucide-icon name="calendar-clock" /> Sân</dt><dd>{{ view.booking.courtName }} · {{ view.source }}</dd></div>
+      <div><dt>Trạng thái đơn</dt><dd>{{ view.bookingStatus }}</dd></div>
+      <div><dt>Tổng tiền</dt><dd>{{ compactMoney(view.booking.totalPrice) }}</dd></div>
+      <div><dt>Tiền cọc</dt><dd>{{ compactMoney(view.booking.depositAmount) }} · {{ view.depositState }}</dd></div>
+      <div class="slot-detail__due" [class.slot-detail__due--clear]="view.dueAmount === 0">
+        <dt>Còn phải thu</dt><dd>{{ view.dueAmount === 0 ? 'Đã thu đủ' : compactMoney(view.dueAmount) }}</dd>
+      </div>
+    </dl>
+    <footer class="slot-detail__actions">
+      <button type="button" class="secondary-button" (click)="closeSlot()">Đóng</button>
+      <button type="button" class="primary-button" (click)="openBooking(view.booking)">
+        <lucide-icon name="external-link" /> Mở đơn đặt sân
+      </button>
+    </footer>
+    } @else {
+    <dl class="slot-detail__rows">
+      <div><dt><lucide-icon name="trophy" /> Giải đấu</dt><dd>{{ view.name }}</dd></div>
+      <div><dt>Trận</dt><dd>{{ view.matchLabel ?? 'Giải giữ sân, chưa xếp trận vào khung giờ này' }}</dd></div>
+      @if (view.matchTime) {
+      <div><dt><lucide-icon name="calendar-clock" /> Giờ thi đấu</dt><dd>{{ view.matchTime }}</dd></div>
+      }
+    </dl>
+    <footer class="slot-detail__actions">
+      <button type="button" class="secondary-button" (click)="closeSlot()">Đóng</button>
+      <button type="button" class="primary-button" (click)="openHeldTournament(view.slot)">
+        <lucide-icon name="external-link" /> Mở giải đấu
+      </button>
+    </footer>
+    }
+  </section>
+</div>
+}
 
   @if (ruleEditorOpen() && selectedCourt()) {
   <div class="rule-editor-backdrop" (click)="closeRuleEditor()">

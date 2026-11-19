@@ -65,7 +65,8 @@
     <article class="revenue-panel">
       <header>
         <div class="revenue-heading">
-          <span>Doanh thu theo ngày <lucide-icon name="info" /></span>
+          <span>Doanh thu theo ngày @if (selectedVenue(); as venue) {<em class="revenue-venue">· {{ venue.name }}</em>}
+            <lucide-icon name="info" /></span>
           <strong id="revenue-today-title">{{ money(dailyRevenue()) }}</strong>
           <small class="daily-revenue-comparison" [class.is-negative]="dailyRevenueChange() < 0">
             <lucide-icon [name]="dailyRevenueChange() < 0 ? 'trending-down' : 'trending-up'" />
@@ -79,7 +80,10 @@
             <app-date-picker ariaLabel="Ngày thống kê doanh thu" [clearable]="false" [ngModel]="revenueDateDraft()" [max]="maximumRevenueDate"
               [disabled]="dailyRevenueLoading()" (dateChange)="selectRevenueDate($event)"></app-date-picker>
           </label>
-          <a routerLink="/admin/finance">Xem báo cáo <lucide-icon name="arrow-right" /></a>
+          <!-- Mở báo cáo đúng cơ sở + ngày đang xem để số liệu hai nơi khớp nhau. -->
+          <a routerLink="/admin/finance"
+            [queryParams]="{ venueId: selectedVenueId(), fromDate: appliedRevenueDate(), toDate: appliedRevenueDate() }">
+            Xem báo cáo <lucide-icon name="arrow-right" /></a>
         </div>
       </header>
 

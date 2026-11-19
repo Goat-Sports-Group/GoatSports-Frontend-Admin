@@ -21,7 +21,7 @@ import { GetMyOwnerVenuesUseCase } from '@application/usecase/venue-owner-dashbo
 import { NotifyService } from '@shared/components/notify/notify.service';
 import { LucideIconComponent } from '@shared/components/ui/lucide-icon/lucide-icon.component';
 import { PageLoadingComponent } from '@shared/components/ui/page-loading/page-loading.component';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { downloadBlob } from '@shared/utils/file.utils';
 
@@ -85,6 +85,7 @@ export class OwnerRevenueComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly notify = inject(NotifyService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly venues = signal<OwnerVenueOverview[]>([]);
   readonly venueOptions = computed<SelectOption[]>(() => [
@@ -234,7 +235,27 @@ export class OwnerRevenueComponent {
       this.stopReportPreview.complete();
       this.releaseReportPreviewUrl();
     });
+    this.applyQueryParams();
     this.loadContext();
+  }
+
+  /**
+   * Mở từ Dashboard ("Xem báo cáo"): ?venueId=&fromDate=&toDate= để báo cáo đúng cơ sở và ngày đang xem ở đó,
+   * con số hai bên khớp nhau. Không có tham số thì giữ mặc định (tất cả cơ sở, tháng này).
+   */
+  private applyQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const isDate = (value: string | null): value is string => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const venueId = params.get('venueId');
+    if (venueId) this.selectedVenueId.set(venueId);
+    const from = params.get('fromDate');
+    if (!isDate(from)) return;
+    const toParam = params.get('toDate');
+    const to = isDate(toParam) && toParam >= from ? toParam : from;
+    const today = this.presetRange('today');
+    this.fromDate.set(from);
+    this.toDate.set(to);
+    this.selectedPreset.set(from === today.fromDate && to === today.toDate ? 'today' : 'custom');
   }
 
   loadContext(): void {

@@ -89,6 +89,41 @@ interface HeldTournament {
   matchLabels: Map<string, string>;
 }
 
+/** Popup của khung giờ đã có lịch: đơn đặt sân, hoặc giải đấu đang giữ sân. */
+type SlotDetailView =
+  | {
+    kind: 'BOOKING';
+    slot: OwnerTimeSlot;
+    visual: CalendarSlotVisualStatus;
+    statusLabel: string;
+    booking: OwnerBooking;
+    customerName: string;
+    customerPhone: string;
+    source: string;
+    bookingStatus: string;
+    depositState: string;
+    dueAmount: number;
+  }
+  | {
+    kind: 'TOURNAMENT';
+    slot: OwnerTimeSlot;
+    visual: CalendarSlotVisualStatus;
+    statusLabel: string;
+    tournamentId: string;
+    name: string;
+    matchLabel: string | null;
+    matchTime: string | null;
+  };
+
+const BOOKING_STATUS_LABELS: Partial<Record<OwnerBooking['status'], string>> = {
+  PENDING_PAYMENT: 'Chưa thanh toán cọc',
+  CONFIRMED: 'Đã xác nhận',
+  CHECKED_IN: 'Đã check-in',
+  COMPLETED: 'Hoàn thành',
+  NO_SHOW: 'Khách vắng mặt',
+  REFUND_PENDING: 'Đang hoàn tiền'
+};
+
 @Component({
   selector: 'app-owner-schedule',
   standalone: true,
@@ -448,6 +483,7 @@ export class OwnerScheduleComponent {
   @HostListener('document:keydown.escape')
   closeRuleEditorWithEscape(): void {
     this.calendarPickerOpen.set(false);
+    this.closeSlot();
     if (this.ruleEditorOpen()) this.closeRuleEditor();
   }
 
@@ -718,6 +754,59 @@ export class OwnerScheduleComponent {
     return Math.max(34, (duration / 60) * this.calendarRowHeight - 4);
   }
 
+  /** Khung giờ đang mở popup thông tin. */
+  readonly openedSlot = signal<OwnerTimeSlot | null>(null);
+
+  readonly openedSlotView = computed<SlotDetailView | null>(() => {
+    const slot = this.openedSlot();
+    if (!slot) return null;
+    const visual = this.slotVisualStatus(slot);
+    const statusLabel = this.slotStatusLabel(slot);
+    if (slot.tournamentId) {
+      const match = this.matchInSlot(slot);
+      return {
+        kind: 'TOURNAMENT', slot, visual, statusLabel, tournamentId: slot.tournamentId,
+        name: this.heldTournaments().get(slot.tournamentId)?.name ?? 'Giải đấu',
+        matchLabel: match?.label ?? null,
+        matchTime: match ? `${this.timeValue(match.schedule.startTime)} – ${this.timeValue(match.schedule.endTime)}` : null
+      };
+    }
+    const booking = this.bookingForSlot(slot);
+    if (!booking) return null;
+    const depositPaid = booking.payments.some(payment => payment.purpose === 'BOOKING_DEPOSIT' && payment.status === 'SUCCEEDED');
+    const paidRemaining = booking.payments
+      .filter(payment => payment.purpose === 'BOOKING_REMAINING' && payment.status === 'SUCCEEDED')
+      .reduce((total, payment) => total + payment.amount, 0);
+    return {
+      kind: 'BOOKING', slot, visual, statusLabel, booking,
+      customerName: booking.customerName?.trim() || booking.walkInCustomerName?.trim() || 'Khách đặt sân',
+      customerPhone: booking.customerPhone?.trim() || booking.walkInCustomerPhone?.trim() || '—',
+      source: booking.source === 'WALK_IN' ? 'Khách tại quầy' : booking.source === 'DIRECT' ? 'Đặt trực tuyến' : 'AI ghép trận',
+      bookingStatus: BOOKING_STATUS_LABELS[booking.status] ?? booking.status,
+      depositState: booking.depositAmount <= 0 ? 'Không cần cọc' : depositPaid ? 'Đã cọc' : 'Chưa cọc',
+      dueAmount: this.isBookingFullyPaid(booking) ? 0 : Math.max(0, booking.remainingAmount - paidRemaining)
+    };
+  });
+
+  /** Khung giờ có đơn đặt sân hoặc giải giữ sân thì bấm được để xem thông tin. */
+  hasSlotDetail(slot: OwnerTimeSlot): boolean {
+    return !['AVAILABLE', 'DISABLED', 'MAINTENANCE'].includes(this.slotVisualStatus(slot));
+  }
+
+  openSlot(slot: OwnerTimeSlot): void {
+    if (this.hasSlotDetail(slot)) this.openedSlot.set(slot);
+  }
+
+  closeSlot(): void {
+    this.openedSlot.set(null);
+  }
+
+  /** Mở trang Đơn đặt sân, lọc sẵn theo mã đơn. */
+  openBooking(booking: OwnerBooking): void {
+    this.closeSlot();
+    this.router.navigate(['/admin/owner-bookings'], { queryParams: { query: booking.bookingCode } });
+  }
+
   slotVisualStatus(slot: OwnerTimeSlot): CalendarSlotVisualStatus {
     const court = this.selectedCourt();
     if (slot.status === 'MAINTENANCE') return 'MAINTENANCE';
@@ -763,15 +852,19 @@ export class OwnerScheduleComponent {
   }
 
   slotTitle(slot: OwnerTimeSlot): string {
-    if (!slot.tournamentId) return this.slotStatusLabel(slot) + ' · ' + this.compactMoney(slot.pricePerHour) + '/giờ';
+    if (!slot.tournamentId) {
+      return this.slotStatusLabel(slot) + ' · ' + this.compactMoney(slot.pricePerHour) + '/giờ'
+        + (this.hasSlotDetail(slot) ? ' · bấm để xem chi tiết' : '');
+    }
     const name = this.heldTournaments().get(slot.tournamentId)?.name ?? 'Giải đấu';
     const match = this.matchInSlot(slot);
     return match
-      ? `${name} · ${match.label} · ${this.timeValue(match.schedule.startTime)}–${this.timeValue(match.schedule.endTime)} · bấm để mở giải`
-      : `${name} giữ sân, chưa xếp trận vào khung giờ này · bấm để mở giải`;
+      ? `${name} · ${match.label} · ${this.timeValue(match.schedule.startTime)}–${this.timeValue(match.schedule.endTime)} · bấm để xem chi tiết`
+      : `${name} giữ sân, chưa xếp trận vào khung giờ này · bấm để xem chi tiết`;
   }
 
   openHeldTournament(slot: OwnerTimeSlot): void {
+    this.closeSlot();
     if (slot.tournamentId) this.router.navigate(['/admin/tournaments', slot.tournamentId], { queryParams: { tab: 'SCHEDULE' } });
   }
 
