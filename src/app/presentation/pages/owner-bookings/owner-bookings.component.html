@@ -26,8 +26,8 @@
       <label><span>Đến ngày</span><app-date-picker ariaLabel="Đến ngày" formControlName="toDate"></app-date-picker></label>
       <label><span>Cơ sở</span><app-select formControlName="venueId" (selectionChange)="selectVenue($event)" [options]="venueFilterOptions()"
           leadingIcon="land-plot" ariaLabel="Cơ sở"></app-select></label>
-      <label><span>Sân</span><app-select formControlName="venueCourtId" [options]="courtFilterOptions()" ariaLabel="Sân"></app-select></label>
-      <label><span>Trạng thái đơn</span><app-select formControlName="status" [options]="statuses" ariaLabel="Trạng thái đơn"></app-select></label>
+      <label><span>Sân</span><app-select formControlName="venueCourtId" (selectionChange)="applyFilters()" [options]="courtFilterOptions()" ariaLabel="Sân"></app-select></label>
+      <label><span>Trạng thái đơn</span><app-select formControlName="status" (selectionChange)="applyFilters()" [options]="statuses" ariaLabel="Trạng thái đơn"></app-select></label>
       <label><span>Trạng thái thanh toán</span><app-select formControlName="paymentStatus" [options]="paymentStatuses" ariaLabel="Trạng thái thanh toán"></app-select></label>
       <button type="submit" class="filter-button" [disabled]="loading() || filterCourtsLoading()">
         <lucide-icon name="list-filter" /> Bộ lọc
