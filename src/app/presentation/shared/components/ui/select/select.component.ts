@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, forwardRef, Input, ViewChild, inject, EventEmitter, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, forwardRef, Input, ViewChild, inject, EventEmitter, Output } from '@angular/core';
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { LucideIconComponent } from '../lucide-icon/lucide-icon.component';
@@ -26,6 +26,8 @@ export interface SelectOption {
 })
 export class SelectComponent implements ControlValueAccessor {
   private elementRef = inject(ElementRef);
+  /** OnPush: form gọi writeValue / setDisabledState ngoài sự kiện của component (vd. sau HTTP) nên phải tự đánh dấu. */
+  private changeDetector = inject(ChangeDetectorRef);
 
   @Input() options: readonly SelectOption[] = [];
   @Input() placeholder = 'Chọn một giá trị';
@@ -151,6 +153,7 @@ export class SelectComponent implements ControlValueAccessor {
 
   writeValue(value: any): void {
     this.value = value ?? '';
+    this.changeDetector.markForCheck();
   }
 
   registerOnChange(fn: (value: any) => void): void {
@@ -164,6 +167,7 @@ export class SelectComponent implements ControlValueAccessor {
   setDisabledState(disabled: boolean): void {
     this.disabled = disabled;
     if (disabled) this.open = false;
+    this.changeDetector.markForCheck();
   }
 
   /** Capture-phase outside click from the CDK overlay: fires even when other components stop propagation. */
